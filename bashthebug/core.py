@@ -40,6 +40,8 @@ class ZooniverseClassifications():
 
             self.classifications["study_id"]=self.classifications.apply(self.determine_study,axis=1)
 
+            self.create_other_tables()
+
         elif pickle_file:
 
             # find out the file extension so we can load in the dataset using the right method
@@ -47,18 +49,12 @@ class ZooniverseClassifications():
 
             # doing it this way means you can provide either pickle file and it will still work
             self.classifications=pandas.read_pickle(stem+"-classifications"+file_extension)
-            self.users=pandas.read_pickle(stem+"-users"+file_extension)
-            self.measurements=pandas.read_pickle(stem+"-measurements"+file_extension)
 
-            # how many classifications have been done?
-            self.total_classifications=self.users.classifications.sum()
+            self.create_other_tables()
 
-            # how many users have contributed?
-            self.total_users=len(self.users)
+            # self.users=pandas.read_pickle(stem+"-users"+file_extension)
+            # self.measurements=pandas.read_pickle(stem+"-measurements"+file_extension)
 
-            # now calculate the Gini coefficient
-            area_under_curve=(self.users['proportion_total_classifications'].sum())/self.total_users
-            self.gini_coefficient=1-(2*area_under_curve)
 
     def create_other_tables(self):
 
@@ -373,7 +369,7 @@ class ZooniverseClassifications():
         fig = plt.figure(figsize=(5, 5))
         axes1 = plt.gca()
 
-        axes1.plot(self.users.proportion_user,self.users.proportion_running_total,color=colour)
+        axes1.plot(self.users.proportion_user_base,self.users.proportion_total_classifications,color=colour)
         axes1.plot([0,1],[0,1],color=colour,linestyle='dashed')
         axes1.text(0.15,0.65,"Gini-coefficient = %.2f" % self.gini_coefficient,color=colour)
         fig.savefig(stem+"-linear"+file_extension,transparent=True)
@@ -383,7 +379,7 @@ class ZooniverseClassifications():
 
         axes1.set_xscale("log")
         axes1.text(0.0005,0.65,"Gini-coefficient = %.2f" % self.gini_coefficient,color=colour)
-        axes1.plot(self.users.proportion_user,self.users.proportion_running_total,color=colour)
+        axes1.plot(self.users.proportion_user_base,self.users.proportion_total_classifications,color=colour)
         fig.savefig(stem+"-log"+file_extension,transparent=True)
 
     def _plot_time_bar(self,data,sampling='week',colour='#e41a1c',filename=None,pre_launch=True,add_cumulative=False,yaxis=None):
