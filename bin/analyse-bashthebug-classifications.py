@@ -19,9 +19,19 @@ if __name__ == "__main__":
     date="foo"
     print("Reading classifications from CSV file...")
     start=time.time()
-    current_classifications=bashthebug.ZooniverseClassifications(zooniverse_file=options.input_file)
+    current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input_file)
     if options.timings:
         print("%.1f seconds" % (time.time()-start))
+
+    print("Extracting classifications and filenames etc...")
+    current_classifications.extract_classifications()
+
+    print("Creating measurements table...")
+    current_classifications.create_measurements_table()
+
+    print("Creating users table...")
+    current_classifications.create_users_table()
+
 
     print("Plotting graphs...")
     start=time.time()

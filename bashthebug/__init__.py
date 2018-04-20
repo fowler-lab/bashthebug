@@ -1,3 +1,4 @@
 #! /usr/bin/env python
 
-from .core import ZooniverseClassifications
+from .ZooniverseClassifications import ZooniverseClassifications
+from .BashTheBugClassifications import BashTheBugClassifications    

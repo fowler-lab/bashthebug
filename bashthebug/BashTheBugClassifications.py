@@ -10,53 +10,12 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-from tqdm import tqdm
+import bashthebug
 
-class ZooniverseClassifications():
-
-    def __init__(self,zooniverse_file=None,pickle_file=None):
-
-        self.drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':6,'EMB':8,'INH':7,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':7,'RFB':6,'PAS':6}
-
-        if zooniverse_file:
-
-            # read in the raw classifications, parsing the JSON as you go
-            self.classifications = pandas.read_csv(zooniverse_file,parse_dates=['created_at'],infer_datetime_format=True,converters={'subject_data':self._parse_json,'metadata':self._parse_json,'annotations':self._parse_json},index_col='classification_id')
-
-            # drop a few of the (unused) columns
-            self.classifications.drop(['gold_standard','expert'], axis=1, inplace=True)
-
-            # then create a Boolean column defining if the classification was made during live or not
-            self.classifications['live_project']  = [self._get_live_project(q) for q in self.classifications.metadata]
-
-            # create a new dataset containing only live classifications
-            self.classifications=self.classifications.loc[self.classifications["live_project"]==True]
-
-            self.classifications['filename']=self.classifications.apply(self._extract_filename2,axis=1)
-
-            self.classifications['plate_image'], self.classifications['drug']=self.classifications['filename'].str.split('-zooniverse-', 1).str
-
-            self.classifications['bashthebug_dilution']=self.classifications.apply(self._parse_annotation,axis=1).astype(int)
-
-            self.classifications["study_id"]=self.classifications.apply(self.determine_study,axis=1)
-
-            self.create_other_tables()
-
-        elif pickle_file:
-
-            # find out the file extension so we can load in the dataset using the right method
-            stem, file_extension = os.path.splitext(pickle_file)
-
-            # doing it this way means you can provide either pickle file and it will still work
-            self.classifications=pandas.read_pickle(stem+"-classifications"+file_extension)
-
-            self.create_other_tables()
-
-            # self.users=pandas.read_pickle(stem+"-users"+file_extension)
-            # self.measurements=pandas.read_pickle(stem+"-measurements"+file_extension)
+class BashTheBugClassifications(bashthebug.ZooniverseClassifications):
 
 
-    def create_other_tables(self):
+    def create_measurements_table(self):
 
         # self.classifications.drop(['metadata','annotations','subject_data','filename'], axis=1, inplace=True)
 
@@ -65,6 +24,8 @@ class ZooniverseClassifications():
 
         # rename the top level of the columns
         self.measurements.columns.set_levels(['bashthebug_dilution'],level=0,inplace=True)
+
+    def create_users_table(self):
 
         # create a table of users and how many classifications they have done
         self.users=self.classifications[['user_name','created_at']].groupby('user_name').count()
@@ -154,13 +115,17 @@ class ZooniverseClassifications():
 
     def extract_classifications(self):
 
-        # self.classifications[['study_id','filename','plate_image','strain','site','duplicate','reader','reading_day','drug']]=self.classifications.apply(self._extract_filename,axis=1)
+        self.drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':6,'EMB':8,'INH':7,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':7,'RFB':6,'PAS':6}
+
         self.classifications['filename']=self.classifications.apply(self._extract_filename2,axis=1)
 
         self.classifications['plate_image'], self.classifications['drug']=self.classifications['filename'].str.split('-zooniverse-', 1).str
 
-        self.classifications['bashthebug_dilution']=self.classifications.apply(self._parse_annotation,axis=1)
-        self.classifications['bashthebug_dilution'].astype(int)
+        self.classifications['bashthebug_dilution']=self.classifications.apply(self._parse_annotation,axis=1).astype(int)
+
+        self.classifications["study_id"]=self.classifications.apply(self.determine_study,axis=1)
+
+
 
     def calculate_consensus_median(self):
 
@@ -223,15 +188,6 @@ class ZooniverseClassifications():
 
         return(line)
 
-    def _parse_json(self,data):
-        return ujson.loads(data)
-
-    def _get_live_project(self,row):
-        try:
-            return row['live_project']
-        except:
-            # apparently some subject metadata doesn't have this? dunno?
-            return False
 
     def _extract_filename2(self,row):
         try:
@@ -331,97 +287,3 @@ class ZooniverseClassifications():
                 return 0
         except:
             return 0
-
-    def plot_classifications_by_time(self,sampling=None,colour='#dc2d4c',filename=None,pre_launch=True,add_cumulative=False):
-
-        # create a dataseries of just the date/times
-        if not pre_launch:
-            a=self.classifications.loc[self.classifications.created_at>datetime.date(2017,4,7)]
-            tmp=a[['created_at']]
-        else:
-            tmp=self.classifications[['created_at']]
-
-        # set it as the index and then re-sample
-        tmp.set_index(tmp.created_at,inplace=True)
-
-        self._plot_time_bar(tmp,sampling,colour,filename,pre_launch,add_cumulative,yaxis="Classifications")
-
-    def plot_users_by_time(self,sampling='week',colour='#9ab51e',filename=None,pre_launch=True,add_cumulative=False):
-
-        # create a dataseries of just the date/times
-        if not pre_launch:
-            a=self.classifications.loc[self.classifications.created_at>datetime.date(2017,4,7)]
-            tmp=a[['user_name','created_at']]
-        else:
-            tmp=self.classifications[['user_name','created_at']]
-
-        foo=tmp[['user_name','created_at']].groupby('user_name').min()
-        foo.set_index(foo.created_at,inplace=True)
-        tmp=foo.created_at
-
-        self._plot_time_bar(foo,sampling,colour,filename,pre_launch,add_cumulative,yaxis="Users")
-
-    def plot_user_classification_distribution(self,colour="#9ab51e",filename=None):
-
-        stem, file_extension = os.path.splitext(filename)
-
-        # use a square figure
-        fig = plt.figure(figsize=(5, 5))
-        axes1 = plt.gca()
-
-        axes1.plot(self.users.proportion_user_base,self.users.proportion_total_classifications,color=colour)
-        axes1.plot([0,1],[0,1],color=colour,linestyle='dashed')
-        axes1.text(0.15,0.65,"Gini-coefficient = %.2f" % self.gini_coefficient,color=colour)
-        fig.savefig(stem+"-linear"+file_extension,transparent=True)
-
-        fig = plt.figure(figsize=(5, 5))
-        axes1 = plt.gca()
-
-        axes1.set_xscale("log")
-        axes1.text(0.0005,0.65,"Gini-coefficient = %.2f" % self.gini_coefficient,color=colour)
-        axes1.plot(self.users.proportion_user_base,self.users.proportion_total_classifications,color=colour)
-        fig.savefig(stem+"-log"+file_extension,transparent=True)
-
-    def _plot_time_bar(self,data,sampling='week',colour='#e41a1c',filename=None,pre_launch=True,add_cumulative=False,yaxis=None):
-
-        assert sampling in ['week','month','day'], "sampling must be either week, month or day"
-
-        assert filename is not None, 'need to specify a filename with a valid extension'
-
-        if sampling=='week':
-            resampled_data=data.resample('W').count()
-            bar_width=7.1
-        elif sampling=="month":
-            resampled_data=data.resample('M').count()
-            bar_width=20
-        elif sampling=="day":
-            resampled_data=data.resample('D').count()
-            bar_width=1.01
-
-        resampled_data.columns=['number']
-
-        resampled_data['total']=resampled_data.cumsum()
-
-        fig = plt.figure(figsize=(9, 5))
-        axes1 = plt.gca()
-
-        axes1.yaxis.set_major_formatter(matplotlib.ticker.StrMethodFormatter('{x:,.0f}'))
-
-        # axes1.spines['top'].set_visible(False)
-        # axes1.spines['right'].set_visible(False)
-
-        axes1.set_ylabel(yaxis+" per "+sampling,color=colour)
-        axes1.xaxis.set_major_locator(mdates.MonthLocator())
-        axes1.xaxis.set_major_formatter(mdates.DateFormatter('%b %y'))
-        axes1.tick_params('y', colors=colour)
-        axes1.bar(resampled_data.index,resampled_data.number,width=bar_width,align='center',lw=0,fc=colour,zorder=10)
-
-        if add_cumulative:
-            axes2 = axes1.twinx()
-            axes2.yaxis.set_major_formatter(matplotlib.ticker.StrMethodFormatter('{x:,.0f}'))
-            axes2.tick_params('y', colors='black')
-            axes2.xaxis.set_major_locator(mdates.MonthLocator())
-            axes2.xaxis.set_major_formatter(mdates.DateFormatter('%b %y'))
-            axes2.plot(resampled_data.index,resampled_data.total,zorder=20,color='black')
-
-        fig.savefig(filename,transparent=True)
