@@ -9,8 +9,11 @@ import os
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from tqdm import tqdm
 
 import bashthebug
+
+
 
 class BashTheBugClassifications(bashthebug.ZooniverseClassifications):
 
@@ -25,41 +28,6 @@ class BashTheBugClassifications(bashthebug.ZooniverseClassifications):
         # rename the top level of the columns
         self.measurements.columns.set_levels(['bashthebug_dilution'],level=0,inplace=True)
 
-    def create_users_table(self):
-
-        # create a table of users and how many classifications they have done
-        self.users=self.classifications[['user_name','created_at']].groupby('user_name').count()
-
-        # rename the total column
-        self.users.columns=['classifications']
-
-        # how many users have contributed?
-        self.total_users=len(self.users)
-
-        # sort the table so the top users are first
-        self.users.sort_values(['classifications'],ascending=False,inplace=True)
-
-        # label each user as whether it is anonymous or not
-        self.users['anonymous']=self.users.apply(self._anonymous_user,axis=1)
-
-        # # create a cumulating column
-        self.users['cumulative_classifications']=self.users.classifications.cumsum()
-
-        # how many classifications have been done?
-        self.total_classifications=self.users.classifications.sum()
-
-        # use this to create a percentage of the total column
-        self.users['proportion_total_classifications']=self.users['cumulative_classifications']/self.total_classifications
-
-        # number the users
-        self.users['rank']=range(1,self.total_users+1,1)
-
-        # calculate the proportion of the user base
-        self.users['proportion_user_base']=self.users['rank']/self.total_users
-
-        # now calculate the Gini coefficient
-        area_under_curve=(self.users['proportion_total_classifications'].sum())/self.total_users
-        self.gini_coefficient=1-(2*area_under_curve)
 
     def merge_other_dataset(self,filename=None,new_column=None):
 
@@ -115,13 +83,17 @@ class BashTheBugClassifications(bashthebug.ZooniverseClassifications):
 
     def extract_classifications(self):
 
+
+
         self.drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':6,'EMB':8,'INH':7,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':7,'RFB':6,'PAS':6}
 
-        self.classifications['filename']=self.classifications.apply(self._extract_filename2,axis=1)
+        tqdm.pandas(desc='extracting filename ')
+        self.classifications['filename']=self.classifications.progress_apply(self._extract_filename2,axis=1)
 
         self.classifications['plate_image'], self.classifications['drug']=self.classifications['filename'].str.split('-zooniverse-', 1).str
 
-        self.classifications['bashthebug_dilution']=self.classifications.apply(self._parse_annotation,axis=1).astype(int)
+        tqdm.pandas(desc='calculating dilution')
+        self.classifications['bashthebug_dilution']=self.classifications.progress_apply(self._parse_annotation,axis=1).astype(int)
 
         self.classifications["study_id"]=self.classifications.apply(self.determine_study,axis=1)
 
@@ -141,9 +113,6 @@ class BashTheBugClassifications(bashthebug.ZooniverseClassifications):
         # calculate for each classification how far it is away from the consensus
         self.classifications['median_delta']=self.classifications['bashthebug_dilution']-self.classifications['bashthebug_median']
 
-    def calculate_task_durations(self):
-
-        self.classifications['task_duration']=self.classifications.apply(self._task_duration,axis=1)
 
     def filter_study(self,study):
 
@@ -153,11 +122,6 @@ class BashTheBugClassifications(bashthebug.ZooniverseClassifications):
 
         self.classifications=self.classifications.loc[self.classifications["reading_day"]==reading_day]
 
-    def create_misc_fields(self):
-
-        self.classifications['user_language']=self.classifications.apply(self._user_language,axis=1)
-        self.classifications['viewport_width']=self.classifications.apply(self._parse_viewport_width,axis=1)
-        self.classifications['viewport_height']=self.classifications.apply(self._parse_viewport_height,axis=1)
 
     def save_pickle(self,filename):
 
@@ -173,20 +137,6 @@ class BashTheBugClassifications(bashthebug.ZooniverseClassifications):
         self.users.to_csv(stem+"-users"+file_extension)
         self.measurements.to_csv(stem+"-measurements"+file_extension)
 
-    def __repr__(self):
-
-        line="%30s %7i\n" % ("Total classifications:",self.total_classifications)
-        line+="%30s %7i\n" % ("Total users:",self.total_users)
-        line+="%30s %7.2f\n" % ("Gini coefficient:",self.gini_coefficient)
-        line+="\n"
-        top_10=(100*self.users.classifications[:10].sum())/self.total_classifications
-        line+="%30s %7.1f %%\n" % ("Top   10 users have done:",top_10)
-        top_100=(100*self.users.classifications[:100].sum())/self.total_classifications
-        line+="%30s %7.1f %%\n" % ("Top  100 users have done:",top_100)
-        top_1000=(100*self.users.classifications[:1000].sum())/self.total_classifications
-        line+="%30s %7.1f %%\n" % ("Top 1000 users have done:",top_1000)
-
-        return(line)
 
 
     def _extract_filename2(self,row):
@@ -240,32 +190,6 @@ class BashTheBugClassifications(bashthebug.ZooniverseClassifications):
             print("Problem parsing "+row.classification_id)
         return(pandas.Series([study_id,filename,plate_image,strain,site,duplicate,reader,reading_day,drug]))
 
-    def _task_duration(self,row):
-        try:
-            start=(dateutil.parser.parse(row.metadata['started_at']))
-            end=(dateutil.parser.parse(row.metadata['finished_at']))
-            duration = (end-start)/pandas.Timedelta(1, unit='s')
-            return(duration)
-        except:
-            return(pandas.Timedelta(0, unit='s'))
-
-    def _user_language(self,row):
-        try:
-            return row.metadata['user_language']
-        except:
-            return ""
-
-    def _parse_viewport_width(self,row):
-        return row.metadata['viewport']['height']
-
-    def _parse_viewport_height(self,row):
-        return row.metadata['viewport']['height']
-
-    def _anonymous_user(self,row):
-        if row.name[0:13]=="not-logged-in":
-            return True
-        else:
-            return False
 
     def _parse_annotation(self,row):
         try:
