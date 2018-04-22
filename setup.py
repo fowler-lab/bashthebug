@@ -2,7 +2,6 @@ from setuptools import setup
 
 setup(
     install_requires=[
-        "numpy >= 1.13",
         "pandas >= 0.21.0",
         "tqdm >= 4.19",
         "ujson >= 1.35",

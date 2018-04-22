@@ -1,8 +1,6 @@
 #! /usr/bin/env python
 
-import dateutil.parser
 import datetime
-import pandas
 import ujson
 import numpy
 import os
@@ -12,11 +10,9 @@ import matplotlib.dates as mdates
 from tqdm import tqdm
 
 import bashthebug
+import pyniverse
 
-
-
-class BashTheBugClassifications(bashthebug.ZooniverseClassifications):
-
+class BashTheBugClassifications(pyniverse.Classifications):
 
     def create_measurements_table(self):
 
@@ -83,8 +79,6 @@ class BashTheBugClassifications(bashthebug.ZooniverseClassifications):
 
     def extract_classifications(self):
 
-
-
         self.drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':6,'EMB':8,'INH':7,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':7,'RFB':6,'PAS':6}
 
         tqdm.pandas(desc='extracting filename ')
@@ -96,8 +90,6 @@ class BashTheBugClassifications(bashthebug.ZooniverseClassifications):
         self.classifications['bashthebug_dilution']=self.classifications.progress_apply(self._parse_annotation,axis=1).astype(int)
 
         self.classifications["study_id"]=self.classifications.apply(self.determine_study,axis=1)
-
-
 
     def calculate_consensus_median(self):
 
@@ -121,22 +113,6 @@ class BashTheBugClassifications(bashthebug.ZooniverseClassifications):
     def filter_readingday(self,reading_day):
 
         self.classifications=self.classifications.loc[self.classifications["reading_day"]==reading_day]
-
-
-    def save_pickle(self,filename):
-
-        stem, file_extension = os.path.splitext(filename)
-        self.classifications.to_pickle(stem+"-classifications"+file_extension)
-        self.users.to_pickle(stem+"-users"+file_extension)
-        self.measurements.to_pickle(stem+"-measurements"+file_extension)
-
-    def save_csv(self,filename):
-
-        stem, file_extension = os.path.splitext(filename)
-        self.classifications.to_csv(stem+"-classifications"+file_extension)
-        self.users.to_csv(stem+"-users"+file_extension)
-        self.measurements.to_csv(stem+"-measurements"+file_extension)
-
 
 
     def _extract_filename2(self,row):
