@@ -1,15 +1,9 @@
 #! /usr/bin/env python
 
-import datetime
-import ujson
-import numpy
 import os
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
+
 from tqdm import tqdm
 
-import bashthebug
 import pyniverse
 
 class BashTheBugClassifications(pyniverse.Classifications):
