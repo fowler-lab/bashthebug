@@ -30,8 +30,8 @@ if __name__ == "__main__":
     start=time.time()
     for sampling_time in ['month','week','day']:
 
-        current_classifications.plot_classifications_by_time(sampling=sampling_time,filename='pdf/'+options.output_stem+'-classifications-'+sampling_time+'.pdf',pre_launch=True,add_cumulative=True)
-        current_classifications.plot_users_by_time(sampling=sampling_time,filename='pdf/'+options.output_stem+'-users-'+sampling_time+'.pdf',pre_launch=True,add_cumulative=True)
+        current_classifications.plot_classifications_by_time(sampling=sampling_time,filename='pdf/'+options.output_stem+'-classifications-'+sampling_time+'.pdf',add_cumulative=True)
+        current_classifications.plot_users_by_time(sampling=sampling_time,filename='pdf/'+options.output_stem+'-users-'+sampling_time+'.pdf',add_cumulative=True)
 
     current_classifications.plot_user_classification_distribution(filename="pdf/"+options.output_stem+'-user-distribution.pdf')
 
