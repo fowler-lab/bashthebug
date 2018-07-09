@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 
-import time
-import argparse
+import time, argparse, logging
 
 import pandas
 
@@ -14,6 +13,12 @@ if __name__ == "__main__":
     parser.add_argument("--output_stem",default="test",help="the first part of each of the output files")
     parser.add_argument("--timings",action='store_true',default=False,help="print the time taken for each step")
     options = parser.parse_args()
+
+    # parse the output file to work out the output stem
+    output_stem=options.input_file.split("bash-the-bug-classifications-")[1].split(".csv")[0]
+
+    # open a log file to record images where the wells cannot be identified
+    logging.basicConfig(filename="log/btb-classifications-analyse-"+output_stem+".log",level=logging.INFO,format='%(levelname)s: %(message)s', datefmt='%a %d %b %Y %H:%M:%S')
 
     print("Reading classifications from CSV file...")
     start=time.time()
@@ -30,22 +35,25 @@ if __name__ == "__main__":
     start=time.time()
     for sampling_time in ['month','week','day']:
 
-        current_classifications.plot_classifications_by_time(sampling=sampling_time,filename='pdf/'+options.output_stem+'-classifications-'+sampling_time+'.pdf',add_cumulative=True)
-        current_classifications.plot_users_by_time(sampling=sampling_time,filename='pdf/'+options.output_stem+'-users-'+sampling_time+'.pdf',add_cumulative=True)
+        current_classifications.plot_classifications_by_time(sampling=sampling_time,filename='pdf/'+output_stem+'-classifications-'+sampling_time+'.pdf',add_cumulative=True)
+        current_classifications.plot_users_by_time(sampling=sampling_time,filename='pdf/'+output_stem+'-users-'+sampling_time+'.pdf',add_cumulative=True)
 
-    current_classifications.plot_user_classification_distribution(filename="pdf/"+options.output_stem+'-user-distribution.pdf')
+    current_classifications.plot_user_classification_distribution(filename="pdf/"+output_stem+'-user-distribution.pdf')
 
     if options.timings:
         print("%.1f seconds" % (time.time()-start))
 
-    print(current_classifications)
+    logging.info(current_classifications)
 
     print("Saving PKL file...")
     start=time.time()
-    current_classifications.save_pickle("dat/bash-the-bug-classifications-"+options.output_stem+".pkl")
+    current_classifications.save_pickle("dat/bash-the-bug-classifications-"+output_stem+".pkl")
     if options.timings:
         print("%.1f seconds" % (time.time()-start))
 
+    logging.info(current_classifications.users[["classifications","rank"]][:20])
+
+    # print(current_classifications.gini_coefficient)
 
     # print("Filtering on study")
     # start=time.time()

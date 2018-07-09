@@ -13,6 +13,6 @@ setup(
     author='Philip W Fowler',
     packages=['bashthebug'],
     license='MIT',
-    scripts=['bin/analyse-bashthebug-classifications.py'],
+    scripts=['bin/btb-classifications-analyse.py'],
     long_description=open('README.md').read(),
 )
