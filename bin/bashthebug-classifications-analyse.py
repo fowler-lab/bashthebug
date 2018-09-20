@@ -15,7 +15,7 @@ if __name__ == "__main__":
     options = parser.parse_args()
 
     # parse the output file to work out the output stem
-    output_stem=options.input_file.split("bash-the-bug-classifications-")[1].split(".csv")[0]
+    output_stem=options.input_file.split("bash-the-bug-classifications")[1].split(".csv")[0]
 
     # open a log file to record images where the wells cannot be identified
     logging.basicConfig(filename="log/btb-classifications-analyse-"+output_stem+".log",level=logging.INFO,format='%(levelname)s: %(message)s', datefmt='%a %d %b %Y %H:%M:%S')
@@ -45,9 +45,9 @@ if __name__ == "__main__":
 
     logging.info(current_classifications)
 
-    print("Saving PKL file...")
+    print("Saving compressed CSV file...")
     start=time.time()
-    current_classifications.save_pickle("dat/bash-the-bug-classifications-"+output_stem+".pkl")
+    current_classifications.save_csv("dat/bash-the-bug-classifications.csv.bz2",compression=True)
     if options.timings:
         print("%.1f seconds" % (time.time()-start))
 
