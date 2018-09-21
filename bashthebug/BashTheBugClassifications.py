@@ -78,6 +78,8 @@ class BashTheBugClassifications(pyniverse.Classifications):
         tqdm.pandas(desc='extracting filename ')
         self.classifications['filename']=self.classifications.progress_apply(self._extract_filename2,axis=1)
 
+        # print(self.classifications['filename'])#.str.split('-zooniverse-', 1).str)
+
         self.classifications['plate_image'], self.classifications['drug']=self.classifications['filename'].str.split('-zooniverse-', 1).str
 
         tqdm.pandas(desc='calculating dilution')
@@ -99,7 +101,6 @@ class BashTheBugClassifications(pyniverse.Classifications):
         # calculate for each classification how far it is away from the consensus
         self.classifications['median_delta']=self.classifications['bashthebug_dilution']-self.classifications['bashthebug_median']
 
-
     def filter_study(self,study):
 
         self.classifications=self.classifications.loc[self.classifications["study_id"]==study]
@@ -112,11 +113,11 @@ class BashTheBugClassifications(pyniverse.Classifications):
     def _extract_filename2(self,row):
         try:
             for i in row.subject_data[str(row.subject_ids)]:
-                if (".png" in i) or i=="Filename":
+                if (".png" in i) or i in ["Filename","Image"]:
                     return(row.subject_data[str(row.subject_ids)][i][:-4])
         except:
             print("Problem parsing "+row.classification_id)
-
+        # print(row)
 
     def _extract_filename(self,row):
         strain=None
