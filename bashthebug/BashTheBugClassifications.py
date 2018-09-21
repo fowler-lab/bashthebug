@@ -2,6 +2,7 @@
 
 import os
 
+import pandas
 from tqdm import tqdm
 
 import pyniverse
@@ -71,6 +72,27 @@ class BashTheBugClassifications(pyniverse.Classifications):
         except:
             return "Unknown"
 
+    def extract_reading_day(self,row):
+
+        if row['study_id']=='CRyPTIC1':
+            reading_day=int(row['plate_image'].split('-')[-1])
+        elif row['study_id']=='CRyPTIC2':
+            reading_day=int(row['plate_image'][-2:])
+        else:
+            reading_day=None
+        return(reading_day)
+
+    def extract_site(self,row):
+
+        if row['study_id']=='CRyPTIC1':
+            site=row['plate_image'].split('-')[-4]
+        elif row['study_id']=='CRyPTIC2':
+            site=row['plate_image'][:2]
+        else:
+            site=None
+        return(site)
+
+
     def extract_classifications(self):
 
         self.drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':6,'EMB':8,'INH':7,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':7,'RFB':6,'PAS':6}
@@ -86,6 +108,11 @@ class BashTheBugClassifications(pyniverse.Classifications):
         self.classifications['bashthebug_dilution']=self.classifications.progress_apply(self._parse_annotation,axis=1).astype(int)
 
         self.classifications["study_id"]=self.classifications.apply(self.determine_study,axis=1)
+
+        tqdm.pandas(desc='extracting reading day')
+        self.classifications['reading_day']=self.classifications.progress_apply(self.extract_reading_day,axis=1)
+        tqdm.pandas(desc='extracting site')
+        self.classifications['site']=self.classifications.progress_apply(self.extract_site,axis=1)
 
     def calculate_consensus_median(self):
 
