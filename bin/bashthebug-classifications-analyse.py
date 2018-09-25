@@ -30,7 +30,7 @@ if __name__ == "__main__":
         current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input_file,from_date=options.from_date)
     else:
         current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input_file)
-        
+
 
     current_classifications.extract_classifications()
 
@@ -55,7 +55,8 @@ if __name__ == "__main__":
     logging.info(current_classifications)
 
     print("Saving compressed CSV file...")
-    current_classifications.save_csv("dat/bash-the-bug-classifications.csv.bz2",compression=True)
+    # current_classifications.save_csv("dat/bash-the-bug-classifications.csv.bz2",compression=True)
+    current_classifications.save_pickle("dat/bash-the-bug-classifications.pkl.bz2")
 
     logging.info(current_classifications.users[["classifications","rank"]][:20])
 
