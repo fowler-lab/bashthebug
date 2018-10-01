@@ -16,20 +16,20 @@ if __name__ == "__main__":
     options = parser.parse_args()
 
     # parse the output file to work out the output stem
-    output_stem=options.input_file.split("bash-the-bug-classifications")[1].split(".csv")[0]
+    output_stem=options.input.split("bash-the-bug-classifications")[1].split(".csv")[0]
 
 
     print("Reading classifications from CSV file...")
 
     if options.to_date:
         if options.from_date:
-            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input_file,to_date=options.to_date,from_date=options.from_date)
+            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date,from_date=options.from_date)
         else:
-            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input_file,to_date=options.to_date)
+            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date)
     elif options.from_date:
-        current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input_file,from_date=options.from_date)
+        current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,from_date=options.from_date)
     else:
-        current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input_file)
+        current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input)
 
 
     current_classifications.extract_classifications()
