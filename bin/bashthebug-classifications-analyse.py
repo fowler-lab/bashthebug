@@ -9,7 +9,7 @@ import bashthebug
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_file",required=True,help="the csv file downloaded from the Zooniverse containing all the classifcations done to date")
+    parser.add_argument("--input",required=True,help="the csv file downloaded from the Zooniverse containing all the classifcations done to date")
     parser.add_argument("--from_date",required=False,help="the date to consider classifications from (ISO format e.g. 2017-04-07)")
     parser.add_argument("--to_date",required=False,help="the date to consider classifications up to")
     parser.add_argument("--timings",action='store_true',default=False,help="print the time taken for each step")

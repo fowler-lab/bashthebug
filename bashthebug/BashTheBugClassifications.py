@@ -193,19 +193,19 @@ class BashTheBugClassifications(pyniverse.Classifications):
         try:
             answer_text=row.annotations[0]["value"]
             if ("No Growth in either" in answer_text) or ("No Growth in one" in answer_text):
-                return -1
+                return -2
             elif ("No Growth in wells" in answer_text) or ("No Growth in all" in answer_text):
                 return 1
             elif ("Growth in all" in answer_text):
                 return int(self.drug_list[row.drug]+1)
             elif "Cannot classify" in answer_text:
-                return 0
+                return -1
             elif ("dose" in answer_text) or ("identify" in answer_text):
                 try:
                     return int(row.annotations[1]["value"])
                 except:
-                    return 0
+                    return -1
             else:
-                return 0
+                return -1
         except:
-            return 0
+            return -1
