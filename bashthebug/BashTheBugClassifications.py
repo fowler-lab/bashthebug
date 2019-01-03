@@ -9,16 +9,25 @@ import pyniverse
 
 class BashTheBugClassifications(pyniverse.Classifications):
 
-    def create_measurements_table(self):
+    def create_measurements_table(self,index='PLATEIMAGE'):
 
-        # self.classifications.drop(['metadata','annotations','subject_data','filename'], axis=1, inplace=True)
+        assert index in ['PLATEIMAGE','PLATE'], 'specified index not recognised!'
 
         # create a table of measurements, additional measurements (e.g. Vizion or AMyGDA) can be merged in later
-        self.measurements=self.classifications[['plate_image','drug','bashthebug_dilution']].groupby(['plate_image','drug']).agg({'bashthebug_dilution':['median','mean','std','min','max','count']})
+        if index=='PLATEIMAGE':
+            self.measurements=self.classifications[['plate_image','drug','bashthebug_dilution']].groupby(['plate_image','drug']).agg({'bashthebug_dilution':['median','mean','std','min','max','count']})
+        else:
+            self.measurements=self.classifications[['plate','reading_day','drug','bashthebug_dilution']].groupby(['plate','reading_day','drug']).agg({'bashthebug_dilution':['median','mean','std','min','max','count']})
+        # self.classifications.drop(['metadata','annotations','subject_data','filename'], axis=1, inplace=True)
 
         # rename the top level of the columns
         self.measurements.columns.set_levels(['bashthebug_dilution'],level=0,inplace=True)
 
+    def create_durations_table(self):
+
+        assert 'task_duration' in self.classifications.columns, "task_duration not in CLASSIFICATIONS table; make sure you have run the calculate_task_durations() method!"
+
+        self.durations=self.classifications[['plate','reading_day','drug','task_duration']].groupby(['plate','reading_day','drug']).agg({'task_duration':['mean','std']})
 
     def merge_other_dataset(self,filename=None,new_column=None):
 
@@ -57,7 +66,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
     def extract_cryptic1_fields(self):
 
-        self.classifications['reading_day']=self.classifications['plate_image'].str.split('-').str[-1].astype(int)
+        # self.classifications['reading_day']=self.classifications['plate_image'].str.split('-').str[-1].astype(int)
         self.classifications['reader']=self.classifications['plate_image'].str.split('-').str[-2].astype(int)
         self.classifications['replicate']=self.classifications['plate_image'].str.split('-').str[-3].astype(int)
         self.classifications['site']=self.classifications['plate_image'].str.split('-').str[-4].astype(int)
@@ -92,6 +101,10 @@ class BashTheBugClassifications(pyniverse.Classifications):
             site=None
         return(site)
 
+    def extract_plate(self,row):
+
+        location=row['plate_image'].rfind("-")
+        return(row['plate_image'][:location])
 
     def extract_classifications(self):
 
@@ -100,17 +113,20 @@ class BashTheBugClassifications(pyniverse.Classifications):
         tqdm.pandas(desc='extracting filename ')
         self.classifications['filename']=self.classifications.progress_apply(self._extract_filename2,axis=1)
 
-        # print(self.classifications['filename'])#.str.split('-zooniverse-', 1).str)
-
         self.classifications['plate_image'], self.classifications['drug']=self.classifications['filename'].str.split('-zooniverse-', 1).str
+
+        tqdm.pandas(desc='extracting plate')
+        self.classifications['plate']=self.classifications.progress_apply(self.extract_plate,axis=1)
 
         tqdm.pandas(desc='calculating dilution')
         self.classifications['bashthebug_dilution']=self.classifications.progress_apply(self._parse_annotation,axis=1).astype(int)
 
-        self.classifications["study_id"]=self.classifications.apply(self.determine_study,axis=1)
+        tqdm.pandas(desc='extracting study')
+        self.classifications["study_id"]=self.classifications.progress_apply(self.determine_study,axis=1)
 
         tqdm.pandas(desc='extracting reading day')
         self.classifications['reading_day']=self.classifications.progress_apply(self.extract_reading_day,axis=1)
+
         tqdm.pandas(desc='extracting site')
         self.classifications['site']=self.classifications.progress_apply(self.extract_site,axis=1)
 
@@ -132,10 +148,13 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
         self.classifications=self.classifications.loc[self.classifications["study_id"]==study]
 
+        self.total_classifications=len(self.classifications)
+
     def filter_readingday(self,reading_day):
 
         self.classifications=self.classifications.loc[self.classifications["reading_day"]==reading_day]
 
+        self.total_classifications=len(self.classifications)
 
     def _extract_filename2(self,row):
         try:

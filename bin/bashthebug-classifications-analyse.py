@@ -18,7 +18,6 @@ if __name__ == "__main__":
     # parse the output file to work out the output stem
     output_stem=options.input.split("bash-the-bug-classifications")[1].split(".csv")[0]
 
-
     print("Reading classifications from CSV file...")
 
     if options.to_date:
@@ -54,36 +53,9 @@ if __name__ == "__main__":
 
     logging.info(current_classifications)
 
-    print("Saving compressed CSV file...")
+    print("Saving compressed PKL file...")
+
     # current_classifications.save_csv("dat/bash-the-bug-classifications.csv.bz2",compression=True)
     current_classifications.save_pickle("dat/bash-the-bug-classifications.pkl.bz2")
 
     logging.info(current_classifications.users[["classifications","rank"]][:20])
-
-    # print(current_classifications.gini_coefficient)
-
-    # print("Filtering on study")
-    # start=time.time()
-    # a.filter_study("CRyPTIC1")
-    # print("%.1f seconds" % (time.time()-start))
-
-    # print("Calculating the task duration..")
-    # start=time.time()
-    # a.calculate_task_durations()
-    # print("%.1f seconds" % (time.time()-start))
-    #
-    # print("Creating misc fields..")
-    # start=time.time()
-    # a.create_misc_fields()
-    # print("%.1f seconds" % (time.time()-start))
-    #
-    # # can print statistics or plot graphs now
-    # pandas.set_option('display.max_columns', 100)
-    # print(a.df[:3])
-
-
-
-
-    # print(a.df.task_duration.dtype)
-    # print(a.df.viewport_width.dtype)
-    # print(a.df.reading_day.dtype)
