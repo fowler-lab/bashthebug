@@ -23,11 +23,17 @@ class BashTheBugClassifications(pyniverse.Classifications):
         # rename the top level of the columns
         self.measurements.columns.set_levels(['bashthebug_dilution'],level=0,inplace=True)
 
-    def create_durations_table(self):
+    def create_durations_table(self,index='PLATEIMAGE'):
 
         assert 'task_duration' in self.classifications.columns, "task_duration not in CLASSIFICATIONS table; make sure you have run the calculate_task_durations() method!"
 
-        self.durations=self.classifications[['plate','reading_day','drug','task_duration']].groupby(['plate','reading_day','drug']).agg({'task_duration':['mean','std']})
+        assert index in ['PLATEIMAGE','PLATE'], 'specified index not recognised!'
+
+        if index=='PLATEIMAGE':
+            self.durations=self.classifications[['plate_image','drug','task_duration']].groupby(['plate_image','drug']).agg({'task_duration':['mean','std']})
+        else:
+            self.durations=self.classifications[['plate','reading_day','drug','task_duration']].groupby(['plate','reading_day','drug']).agg({'task_duration':['median','mean','std','min','max','count']})
+
 
     def merge_other_dataset(self,filename=None,new_column=None):
 
