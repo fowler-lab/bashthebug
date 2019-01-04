@@ -34,7 +34,6 @@ class BashTheBugClassifications(pyniverse.Classifications):
         else:
             self.durations=self.classifications[['plate','reading_day','drug','task_duration']].groupby(['plate','reading_day','drug']).agg({'task_duration':['median','mean','std','min','max','count']})
 
-
     def merge_other_dataset(self,filename=None,new_column=None):
 
         # find out the file extension so we can load in the dataset using the right method
