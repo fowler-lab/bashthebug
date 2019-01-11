@@ -28,15 +28,27 @@ if __name__ == "__main__":
 
     if options.to_date:
         if options.from_date:
-            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date,from_date=options.from_date)
+            if options.flavour=='pro':
+                current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date,from_date=options.from_date,live_rows=False)
+            else:
+                current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date,from_date=options.from_date)
         else:
-            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date)
+            if options.flavour=='pro':
+                current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date,live_rows=False)
+            else:
+                current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date)
     elif options.from_date:
-        current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,from_date=options.from_date)
+        if options.flavour=='pro':
+            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,from_date=options.from_date,live_rows=False)
+        else:
+            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,from_date=options.from_date)
     else:
-        current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input)
+        if options.flavour=='pro':
+            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,live_rows=False)
+        else:
+            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input)
 
-    current_classifications.extract_classifications()
+    current_classifications.extract_classifications(flavour=options.flavour)
 
     most_recent_date=str(current_classifications.classifications.created_at.max().date().isoformat())
 
@@ -73,6 +85,6 @@ if __name__ == "__main__":
     if options.flavour=="regular":
         current_classifications.save_pickle("dat/bash-the-bug-classifications.pkl.bz2")
     elif options.flavour=='pro':
-        current_classifications.save_pickle("dat/bash-the-bug-pro-classifications.pkl.bz2")    
+        current_classifications.save_pickle("dat/bash-the-bug-pro-classifications.pkl.bz2")
 
     logging.info(current_classifications.users[["classifications","rank"]][:20])

@@ -91,7 +91,10 @@ class BashTheBugClassifications(pyniverse.Classifications):
         if row['study_id']=='CRyPTIC1':
             reading_day=int(row['plate_image'].split('-')[-1])
         elif row['study_id']=='CRyPTIC2':
-            reading_day=int(row['plate_image'][-2:])
+            if 'UKMYC' in row['plate_image']:
+                reading_day=int(row['plate_image'].split("-")[-2])
+            else:
+                reading_day=int(row['plate_image'].split("-")[-1])
         else:
             reading_day=None
         return(reading_day)
@@ -106,22 +109,51 @@ class BashTheBugClassifications(pyniverse.Classifications):
             site=None
         return(site)
 
-    def extract_plate(self,row):
+    def _extract_plate(self,row):
 
-        location=row['plate_image'].rfind("-")
-        return(row['plate_image'][:location])
+        if "UKMYC" in row['plate_image']:
+            foo=row['plate_image'][:-7]
+        else:
+            foo=row['plate_image']
+        location=foo.rfind("-")
+        return(foo[:location])
 
-    def extract_classifications(self):
+    def _extract_drug(self,row):
+        drug=row['filename'][-3:]
+        return(drug)
+
+    def _extract_plateimage(self,row):
+
+        if "UKMYC" in row['filename']:
+            plate_image=row['filename'].split("-UKMYC")[0]
+        else:
+            if self.flavour=='regular':
+                plate_image=row['filename'].split('-zooniverse-')[0]
+            elif self.flavour=='pro':
+                plate_image=row['filename'].split('-discrepancy-')[0]
+
+        return(plate_image)
+
+    def extract_classifications(self,flavour='regular'):
+
+        assert flavour in ['regular','pro'], "unrecognised flavour! "
+
+        # save the flavour
+        self.flavour=flavour
 
         self.drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':6,'EMB':8,'INH':7,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':7,'RFB':6,'PAS':6}
 
-        tqdm.pandas(desc='extracting filename ')
+        tqdm.pandas(desc='extracting filename')
         self.classifications['filename']=self.classifications.progress_apply(self._extract_filename2,axis=1)
 
-        self.classifications['plate_image'], self.classifications['drug']=self.classifications['filename'].str.split('-zooniverse-', 1).str
+        tqdm.pandas(desc='extracting plate_image')
+        self.classifications['plate_image']=self.classifications.progress_apply(self._extract_plateimage,axis=1)
+
+        tqdm.pandas(desc='extracting drug')
+        self.classifications['drug']=self.classifications.progress_apply(self._extract_drug,axis=1)
 
         tqdm.pandas(desc='extracting plate')
-        self.classifications['plate']=self.classifications.progress_apply(self.extract_plate,axis=1)
+        self.classifications['plate']=self.classifications.progress_apply(self._extract_plate,axis=1)
 
         tqdm.pandas(desc='calculating dilution')
         self.classifications['bashthebug_dilution']=self.classifications.progress_apply(self._parse_annotation,axis=1).astype(int)
@@ -164,11 +196,10 @@ class BashTheBugClassifications(pyniverse.Classifications):
     def _extract_filename2(self,row):
         try:
             for i in row.subject_data[str(row.subject_ids)]:
-                if (".png" in i) or i in ["Filename","Image"]:
+                if (".png" in i) or (".jpg" in i) or i in ["Filename","Image"]:
                     return(row.subject_data[str(row.subject_ids)][i][:-4])
         except:
             print("Problem parsing "+row.classification_id)
-        # print(row)
 
     def _extract_filename(self,row):
         strain=None
@@ -223,7 +254,23 @@ class BashTheBugClassifications(pyniverse.Classifications):
             elif ("Growth in all" in answer_text):
                 return int(self.drug_list[row.drug]+1)
             elif "Cannot classify" in answer_text:
-                return -1
+                if self.flavour=='regular':
+                    return -1
+                elif self.flavour=='pro':
+                    if row.annotations[1]["value"]=="Skip wells":
+                        return -10
+                    elif row.annotations[1]["value"]=="Trailing pattern":
+                        return -11
+                    elif row.annotations[1]["value"]=="Contamination/empty wells":
+                        return -12
+                    elif row.annotations[1]["value"]=="Artefacts":
+                        return -14
+                    elif row.annotations[1]["value"]=="Insufficient growth":
+                        return -15
+                    elif row.annotations[1]["value"]=="Other":
+                        return -16
+                    else:
+                        raise ValueError("unrecognised answer for cannot classify: ",row.annotations[1]["value"])
             elif ("dose" in answer_text) or ("identify" in answer_text):
                 try:
                     return int(row.annotations[1]["value"])
