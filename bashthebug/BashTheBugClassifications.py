@@ -111,20 +111,29 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
     def _extract_plate(self,row):
 
-        if "UKMYC" in row['plate_image']:
-            foo=row['plate_image'][:-7]
+        if row['plate_image'] is None:
+            return(None)
         else:
-            foo=row['plate_image']
-        location=foo.rfind("-")
-        return(foo[:location])
+            if "UKMYC" in row['plate_image']:
+                foo=row['plate_image'][:-7]
+            else:
+                foo=row['plate_image']
+            location=foo.rfind("-")
+            return(foo[:location])
 
     def _extract_drug(self,row):
-        drug=row['filename'][-3:]
-        return(drug)
+
+        if row['filename'] is None:
+            return(None)
+        else:
+            drug=row['filename'][-3:]
+            return(drug)
 
     def _extract_plateimage(self,row):
 
-        if "UKMYC" in row['filename']:
+        if row['filename'] is None:
+            plate_image=None
+        elif "UKMYC" in row['filename']:
             plate_image=row['filename'].split("-UKMYC")[0]
         else:
             if self.flavour=='regular':
