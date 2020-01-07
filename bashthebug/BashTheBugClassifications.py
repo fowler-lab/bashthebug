@@ -109,42 +109,69 @@ class BashTheBugClassifications(pyniverse.Classifications):
             site=None
         return(site)
 
-    def _extract_plate(self,row):
+    def _extract_plateimage(self,row):
 
-        if row['plate_image'] is None:
-            return(None)
+        # find out the filename
+        filename=None
+        try:
+            for i in row.subject_data[str(row.subject_ids)]:
+                if (".png" in i) or (".jpg" in i) or i in ["Filename","Image"]:
+                    filename=row.subject_data[str(row.subject_ids)][i][:-4]
+        except:
+            print("Problem parsing "+row.classification_id)
+
+        # find out the study id
+        if filename==None:
+            study_id=None
+        elif filename in ('H37','CRY'):
+            study_id="CRyPTIC1"
         else:
+            study_id="CRyPTIC2"
+
+        # extract plate
+        plate=None
+        if 'plate_image' in row.keys() and row['plate_image'] is not None:
             if "UKMYC" in row['plate_image']:
                 foo=row['plate_image'][:-7]
             else:
                 foo=row['plate_image']
             location=foo.rfind("-")
-            return(foo[:location])
+            plate=foo[:location]
 
-    def _extract_drug(self,row):
+        # extract drug
+        drug=None
+        if filename is not None:
+            drug=filename[-3:]
 
-        if row['filename'] is None:
-            return(None)
-        else:
-            drug=row['filename'][-3:]
-            return(drug)
-
-    def _extract_plateimage(self,row):
-
-        if row['filename'] is None:
+        # extract plate_image and plate_design
+        if filename is None:
             plate_image=None
             plate_design=None
-        elif "UKMYC" in row['filename']:
-            plate_image=row['filename'].split("-UKMYC")[0]
-            plate_design=row['filename'].split(plate_image+"-")[1].split("-zooniverse")[0]
+        elif "UKMYC" in filename:
+            plate_image=filename.split("-UKMYC")[0]
+            plate_design=filename.split(plate_image+"-")[1].split("-zooniverse")[0]
         else:
             if self.flavour=='regular':
-                plate_image=row['filename'].split('-zooniverse-')[0]
+                plate_image=filename.split('-zooniverse-')[0]
             elif self.flavour=='pro':
-                plate_image=row['filename'].split('-discrepancy-')[0]
+                plate_image=filename.split('-discrepancy-')[0]
             plate_design="UKMYC5"
 
-        return(pandas.Series([plate_image,plate_design]))
+        # extract site and reading_day
+        if study_id=='CRyPTIC1':
+            reading_day=int(plate_image.split('-')[-1])
+            site=plate_image.split('-')[-4]
+        elif study_id=='CRyPTIC2':
+            site=plate_image[:2]
+            if 'UKMYC' in plate_image:
+                reading_day=int(plate_image.split("-")[-2])
+            else:
+                reading_day=int(plate_image.split("-")[-1])
+        else:
+            site=None
+            reading_day=None
+
+        return(pandas.Series([filename,plate_image,plate_design,drug,plate,study_id,reading_day,site]))
 
     def extract_classifications(self,flavour='regular'):
 
@@ -153,29 +180,29 @@ class BashTheBugClassifications(pyniverse.Classifications):
         # save the flavour
         self.flavour=flavour
 
-        tqdm.pandas(desc='extracting filename')
-        self.classifications['filename']=self.classifications.progress_apply(self._extract_filename2,axis=1)
+        # tqdm.pandas(desc='extracting filename')
+        # self.classifications['filename']=self.classifications.progress_apply(self._extract_filename2,axis=1)
 
         tqdm.pandas(desc='extracting plate_image and design')
-        self.classifications[['plate_image','plate_design']]=self.classifications.progress_apply(self._extract_plateimage,axis=1)
+        self.classifications[['filename','plate_image','plate_design','drug','plate','study_id','reading_day','site']]=self.classifications.progress_apply(self._extract_plateimage,axis=1)
 
-        tqdm.pandas(desc='extracting drug')
-        self.classifications['drug']=self.classifications.progress_apply(self._extract_drug,axis=1)
-
-        tqdm.pandas(desc='extracting plate')
-        self.classifications['plate']=self.classifications.progress_apply(self._extract_plate,axis=1)
+        # tqdm.pandas(desc='extracting drug')
+        # self.classifications['drug']=self.classifications.progress_apply(self._extract_drug,axis=1)
+        #
+        # tqdm.pandas(desc='extracting plate')
+        # self.classifications['plate']=self.classifications.progress_apply(self._extract_plate,axis=1)
 
         tqdm.pandas(desc='calculating dilution')
         self.classifications['bashthebug_dilution']=self.classifications.progress_apply(self._parse_annotation,axis=1).astype(int)
 
-        tqdm.pandas(desc='extracting study')
-        self.classifications["study_id"]=self.classifications.progress_apply(self.determine_study,axis=1)
+        # tqdm.pandas(desc='extracting study')
+        # self.classifications["study_id"]=self.classifications.progress_apply(self.determine_study,axis=1)
 
-        tqdm.pandas(desc='extracting reading day')
-        self.classifications['reading_day']=self.classifications.progress_apply(self.extract_reading_day,axis=1)
+        # tqdm.pandas(desc='extracting reading day')
+        # self.classifications['reading_day']=self.classifications.progress_apply(self.extract_reading_day,axis=1)
 
-        tqdm.pandas(desc='extracting site')
-        self.classifications['site']=self.classifications.progress_apply(self.extract_site,axis=1)
+        # tqdm.pandas(desc='extracting site')
+        # self.classifications['site']=self.classifications.progress_apply(self.extract_site,axis=1)
 
     def calculate_consensus_median(self):
 
@@ -256,95 +283,116 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
     def _parse_annotation(self,row):
 
-        # First thing is to work out what the question/task structure is
-        task_label=row.annotations[0]["task_label"]
-
-        if "being mindful" in task_label:
-            question_type="pro_v1"
-        elif "Having looked" in task_label:
-            question_type="regular_v1"
-        elif "stops, please choose the number" in task_label:
-            question_type="regular_v2"
-        elif "Mark the first well contain" in task_label:
-            question_type="testing"
-        else:
-            raise ValueError("cannot determine type of task:"+ task_label)
-
-        # ignore the classifications where a red cross is placed
-        if question_type=="testing":
-
-            return(None)
+        if 'task_label' not in row.annotations[0]:
+            print(row.annotations)
+            return(0)
 
         else:
 
-            answer_text=row.annotations[0]["value"]
+            # First thing is to work out what the question/task structure is
+            task_label=row.annotations[0]["task_label"]
 
-            if question_type=='regular_v1':
+            if "being mindful" in task_label:
+                question_type="pro_v1"
+            elif "Having looked" in task_label:
+                question_type="regular_v1"
+            elif "stops, please choose the number" in task_label:
+                question_type="regular_v2"
+            elif "choose the number" in task_label:
+                question_type="regular_v2"
+            elif "Mark the first well contain" in task_label:
+                question_type="testing"
+            else:
+                raise ValueError("cannot determine type of task:"+ task_label)
 
-                if ("No Growth in either" in answer_text) or ("No Growth in one" in answer_text):
-                    return -2
-                elif ("No Growth in wells" in answer_text) or ("No Growth in all" in answer_text):
-                    return 1
-                elif ("Growth in all" in answer_text):
+            # ignore the classifications where a red cross is placed
+            if question_type=="testing":
 
-                    if row['plate_design']=="UKMYC5":
-                        drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':6,'EMB':8,'INH':7,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':7,'RFB':6,'PAS':6}
-                    elif row['plate_design']=="UKMYC6":
-                        drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':7,'EMB':8,'INH':10,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':9,'RFB':6}
+                return(0)
+
+            else:
+
+                answer_text=row.annotations[0]["value"]
+
+                if answer_text is None:
+                    return(0)
+
+                elif question_type=='regular_v1':
+
+                    if ("No Growth in either" in answer_text) or ("No Growth in one" in answer_text):
+                        return -2
+                    elif ("No Growth in wells" in answer_text) or ("No Growth in all" in answer_text):
+                        return 1
+                    elif ("Growth in all" in answer_text):
+
+                        if row['plate_design']=="UKMYC5":
+                            drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':6,'EMB':8,'INH':7,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':7,'RFB':6,'PAS':6}
+                        elif row['plate_design']=="UKMYC6":
+                            drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':7,'EMB':8,'INH':10,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':9,'RFB':6}
+                        else:
+                            raise ValueError("plate design not found")
+
+                        return int(drug_list[row.drug]+1)
+
+                    elif "Cannot classify" in answer_text:
+                        return -1
+                    elif len(row.annotations)>1 and row.annotations[1]["value"].isnumeric():
+                        return int(row.annotations[1]["value"])
                     else:
-                        raise ValueError("plate design not found")
+                        return(0)
+                        # try:
+                        #     return int()
+                        # except:
+                        #     print(task_label,question_type,row.annotations[0]["value"], row.annotations[1]["value"],row)
 
-                    return int(drug_list[row.drug]+1)
+                elif question_type=="regular_v2":
 
-                elif "Cannot classify" in answer_text:
-                    return -1
-                else:
-                    return int(row.annotations[1]["value"])
+                    if ("No Growth in either" in answer_text) or ("No Growth in one" in answer_text):
+                        return -2
+                    elif ("No Growth in wells" in answer_text) or ("No Growth in all" in answer_text):
+                        return 1
+                    elif ("Growth in all" in answer_text):
 
-            elif question_type=="regular_v2":
+                        if row['plate_design']=="UKMYC5":
+                            drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':6,'EMB':8,'INH':7,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':7,'RFB':6,'PAS':6}
+                        elif row['plate_design']=="UKMYC6":
+                            drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':7,'EMB':8,'INH':10,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':9,'RFB':6}
+                        else:
+                            raise ValueError("plate design not found")
 
-                if ("No Growth in either" in answer_text) or ("No Growth in one" in answer_text):
-                    return -2
-                elif ("No Growth in wells" in answer_text) or ("No Growth in all" in answer_text):
-                    return 1
-                elif ("Growth in all" in answer_text):
+                        return int(drug_list[row.drug]+1)
 
-                    if row['plate_design']=="UKMYC5":
-                        drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':6,'EMB':8,'INH':7,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':7,'RFB':6,'PAS':6}
-                    elif row['plate_design']=="UKMYC6":
-                        drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':7,'EMB':8,'INH':10,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':9,'RFB':6}
+                    elif "Cannot classify" in answer_text:
+                        return -1
+                    elif row.annotations[0]["value"].isnumeric():
+                        return int(row.annotations[0]["value"])
                     else:
-                        raise ValueError("plate design not found")
+                        return(0)
 
-                    return int(drug_list[row.drug]+1)
+                elif question_type=="pro_v1":
 
-                elif "Cannot classify" in answer_text:
-                    return -1
-                else:
-                    return int(row.annotations[0]["value"])
-
-            elif question_type=="pro_v1":
-
-                if ("No Growth in either" in answer_text) or ("No Growth in one" in answer_text):
-                    return -2
-                elif ("No Growth in wells" in answer_text) or ("No Growth in all" in answer_text):
-                    return 1
-                elif ("Growth in all" in answer_text):
-                    return int(self.drug_list[row.drug]+1)
-                elif "Cannot classify" in answer_text:
-                    if row.annotations[1]["value"]=="Skip wells":
-                        return -10
-                    elif row.annotations[1]["value"]=="Trailing pattern":
-                        return -11
-                    elif row.annotations[1]["value"]=="Contamination/empty wells":
-                        return -12
-                    elif row.annotations[1]["value"]=="Artefacts":
-                        return -14
-                    elif row.annotations[1]["value"]=="Insufficient growth":
-                        return -15
-                    elif row.annotations[1]["value"]=="Other":
-                        return -16
+                    if ("No Growth in either" in answer_text) or ("No Growth in one" in answer_text):
+                        return -2
+                    elif ("No Growth in wells" in answer_text) or ("No Growth in all" in answer_text):
+                        return 1
+                    elif ("Growth in all" in answer_text):
+                        return int(self.drug_list[row.drug]+1)
+                    elif "Cannot classify" in answer_text:
+                        if row.annotations[1]["value"]=="Skip wells":
+                            return -10
+                        elif row.annotations[1]["value"]=="Trailing pattern":
+                            return -11
+                        elif row.annotations[1]["value"]=="Contamination/empty wells":
+                            return -12
+                        elif row.annotations[1]["value"]=="Artefacts":
+                            return -14
+                        elif row.annotations[1]["value"]=="Insufficient growth":
+                            return -15
+                        elif row.annotations[1]["value"]=="Other":
+                            return -16
+                        else:
+                            raise ValueError("unrecognised answer for cannot classify: ",row.annotations[1]["value"])
+                    elif row.annotations[1]["value"].isnumeric():
+                        return int(row.annotations[1]["value"])
                     else:
-                        raise ValueError("unrecognised answer for cannot classify: ",row.annotations[1]["value"])
-                else:
-                    return int(row.annotations[1]["value"])
+                        return(0)
