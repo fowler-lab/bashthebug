@@ -123,7 +123,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
         # find out the study id
         if filename==None:
             study_id=None
-        elif filename in ('H37','CRY'):
+        elif filename[:3] in ('H37','CRY'):
             study_id="CRyPTIC1"
         else:
             study_id="CRyPTIC2"
@@ -285,7 +285,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
         if 'task_label' not in row.annotations[0]:
             print(row.annotations)
-            return(0)
+            return(-100)
 
         else:
 
@@ -308,14 +308,14 @@ class BashTheBugClassifications(pyniverse.Classifications):
             # ignore the classifications where a red cross is placed
             if question_type=="testing":
 
-                return(0)
+                return(-101)
 
             else:
 
                 answer_text=row.annotations[0]["value"]
 
                 if answer_text is None:
-                    return(0)
+                    return(-102)
 
                 elif question_type=='regular_v1':
 
@@ -336,14 +336,13 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
                     elif "Cannot classify" in answer_text:
                         return -1
-                    elif len(row.annotations)>1 and row.annotations[1]["value"].isnumeric():
-                        return int(row.annotations[1]["value"])
+                    elif len(row.annotations)>1 and row.annotations[1]["value"] is not None:
+                        try:
+                            return int(row.annotations[1]["value"])
+                        except:
+                            return(-103)
                     else:
-                        return(0)
-                        # try:
-                        #     return int()
-                        # except:
-                        #     print(task_label,question_type,row.annotations[0]["value"], row.annotations[1]["value"],row)
+                        return(-104)
 
                 elif question_type=="regular_v2":
 
@@ -367,7 +366,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
                     elif row.annotations[0]["value"].isnumeric():
                         return int(row.annotations[0]["value"])
                     else:
-                        return(0)
+                        return(-105)
 
                 elif question_type=="pro_v1":
 
@@ -395,4 +394,4 @@ class BashTheBugClassifications(pyniverse.Classifications):
                     elif row.annotations[1]["value"].isnumeric():
                         return int(row.annotations[1]["value"])
                     else:
-                        return(0)
+                        return(-106)
