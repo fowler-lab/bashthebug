@@ -284,7 +284,6 @@ class BashTheBugClassifications(pyniverse.Classifications):
     def _parse_annotation(self,row):
 
         if 'task_label' not in row.annotations[0]:
-            print(row.annotations)
             return(-100)
 
         else:
