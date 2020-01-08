@@ -385,6 +385,13 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
                 answer_text=row.annotations[0]["value"]
 
+                if row['plate_design']=="UKMYC5":
+                    drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':6,'EMB':8,'INH':7,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':7,'RFB':6,'PAS':6}
+                elif row['plate_design']=="UKMYC6":
+                    drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':7,'EMB':8,'INH':10,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':9,'RFB':6}
+                else:
+                    raise ValueError("plate design not found")
+
                 if answer_text is None:
                     return(-102)
 
@@ -395,16 +402,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
                     elif ("No Growth in wells" in answer_text) or ("No Growth in all" in answer_text):
                         return 1
                     elif ("Growth in all" in answer_text):
-
-                        if row['plate_design']=="UKMYC5":
-                            drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':6,'EMB':8,'INH':7,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':7,'RFB':6,'PAS':6}
-                        elif row['plate_design']=="UKMYC6":
-                            drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':7,'EMB':8,'INH':10,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':9,'RFB':6}
-                        else:
-                            raise ValueError("plate design not found")
-
                         return int(drug_list[row.drug]+1)
-
                     elif "Cannot classify" in answer_text:
                         return -1
                     elif len(row.annotations)>1 and row.annotations[1]["value"] is not None:
@@ -422,14 +420,6 @@ class BashTheBugClassifications(pyniverse.Classifications):
                     elif ("No Growth in wells" in answer_text) or ("No Growth in all" in answer_text):
                         return 1
                     elif ("Growth in all" in answer_text):
-
-                        if row['plate_design']=="UKMYC5":
-                            drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':6,'EMB':8,'INH':7,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':7,'RFB':6,'PAS':6}
-                        elif row['plate_design']=="UKMYC6":
-                            drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':7,'EMB':8,'INH':10,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':9,'RFB':6}
-                        else:
-                            raise ValueError("plate design not found")
-
                         return int(drug_list[row.drug]+1)
 
                     elif "Cannot classify" in answer_text:
