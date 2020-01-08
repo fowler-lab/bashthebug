@@ -2,12 +2,71 @@
 
 import os
 
-import pandas
+import pandas, numpy
 from tqdm import tqdm
 
 import pyniverse
 
 class BashTheBugClassifications(pyniverse.Classifications):
+
+    def _remove_values_from_list(self,the_list,threshold):
+        return numpy.array([value for value in the_list if value >= threshold]).astype(int)
+
+
+    def _custom_aggregate_classifications(self,series):
+
+        n_total=None
+        n_failed=None
+        n_cannot_read=None
+        n_valid=None
+        median=None
+        mean=None
+        std=None
+        mmin=None
+        mmax=None
+
+        # store the classifications as a list
+        classifications=numpy.array(series).astype(int)
+
+        # how many classifications do we have?
+        count=len(classifications)
+
+        # first check we have enough samples
+        if len(classifications)>10:
+
+            n_failed=numpy.sum(classifications<-2)
+
+            # now filter out failed classifications
+            classifications = self._remove_values_from_list(classifications,-2)
+
+            # now count how many 'cannot read' codes there are
+            n_cannot_read = numpy.sum(classifications<0)
+
+            # if over half the volunteers have said they cannot read the image, return cannot read
+            proportion_failed = n_cannot_read/len(classifications)
+
+            if proportion_failed<0.5:
+
+                # filter out the cannot read codes
+                classifications = self._remove_values_from_list(classifications,0)
+
+                n_valid=len(classifications)
+
+                if n_valid>=5:
+
+                    # now finally we can apply the median
+                    median=numpy.median(classifications)
+
+                    mean=numpy.mean(classifications)
+
+                    std=numpy.std(classifications)
+
+                    mmin=numpy.min(classifications)
+
+                    mmax=numpy.max(classifications)
+
+        # return(count,n_failed,n_cannot_read,n_valid,median,mean,std,mmin,mmax)
+        return(count,median,mean,std,mmin,mmax)
 
     def create_measurements_table(self,index='PLATEIMAGE'):
 
@@ -15,13 +74,26 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
         # create a table of measurements, additional measurements (e.g. Vizion or AMyGDA) can be merged in later
         if index=='PLATEIMAGE':
-            self.measurements=self.classifications[['plate_image','drug','bashthebug_dilution']].groupby(['plate_image','drug']).agg({'bashthebug_dilution':['median','mean','std','min','max','count']})
+            # self.measurements=self.classifications[['plate_image','drug','bashthebug_dilution']].groupby(['plate_image','drug']).agg({'bashthebug_dilution':['median','mean','std','min','max','count']})
+            foo=self.classifications[['plate_image','drug','bashthebug_dilution']].groupby(['plate_image','drug']).agg(self._custom_aggregate_classifications)
+
+            self.measurements=pandas.DataFrame(foo['bashthebug_dilution'].tolist(),index=foo.index)
+
+
         else:
-            self.measurements=self.classifications[['plate','reading_day','drug','bashthebug_dilution']].groupby(['plate','reading_day','drug']).agg({'bashthebug_dilution':['median','mean','std','min','max','count']})
+            # self.measurements=self.classifications[['plate','reading_day','drug','bashthebug_dilution']].groupby(['plate','reading_day','drug']).agg({'bashthebug_dilution':['median','mean','std','min','max','count']})
+            foo=self.classifications[['plate','reading_day','drug','bashthebug_dilution']].groupby(['plate','reading_day','drug']).agg(self._custom_aggregate_classifications)
+
+            self.measurements=pandas.DataFrame(foo['bashthebug_dilution'].tolist(),index=foo.index)
+
+        # self.measurements.columns=['count','n_failed','n_cannot_read','n_valid','median','mean','std','min','max']
+        self.measurements.columns=['count','median','mean','std','min','max']
+        self.measurements=self.measurements[['median','mean','std','min','max','count']]
+
         # self.classifications.drop(['metadata','annotations','subject_data','filename'], axis=1, inplace=True)
 
         # rename the top level of the columns
-        self.measurements.columns.set_levels(['bashthebug_dilution'],level=0,inplace=True)
+        # self.measurements.columns.set_levels(['bashthebug_dilution'],level=0,inplace=True)
 
     def create_durations_table(self,index='PLATEIMAGE'):
 
@@ -183,7 +255,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
         # tqdm.pandas(desc='extracting filename')
         # self.classifications['filename']=self.classifications.progress_apply(self._extract_filename2,axis=1)
 
-        tqdm.pandas(desc='extracting plate_image and design')
+        tqdm.pandas(desc='extracting metadata')
         self.classifications[['filename','plate_image','plate_design','drug','plate','study_id','reading_day','site']]=self.classifications.progress_apply(self._extract_plateimage,axis=1)
 
         # tqdm.pandas(desc='extracting drug')
