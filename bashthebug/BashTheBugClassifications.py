@@ -31,42 +31,48 @@ class BashTheBugClassifications(pyniverse.Classifications):
         # how many classifications do we have?
         count=len(classifications)
 
+        n_failed=numpy.sum(classifications<-2)
+
+        # now count how many 'cannot read' codes there are
+        n_cannot_read = numpy.sum((classifications!=-1) & (classifications!=-2))
+
+        n_valid=numpy.sum(classifications>01)
+
         # first check we have enough samples
         if len(classifications)>10:
-
-            n_failed=numpy.sum(classifications<-2)
 
             # now filter out failed classifications
             classifications = self._remove_values_from_list(classifications,-2)
 
-            # now count how many 'cannot read' codes there are
-            n_cannot_read = numpy.sum(classifications<0)
-
             # if over half the volunteers have said they cannot read the image, return cannot read
             proportion_failed = n_cannot_read/len(classifications)
 
-            if proportion_failed<0.5:
+            if proportion_failed>=0.5 or n_valid<=5:
+
+                failed_code=-1
+                median=failed_code
+                mean=failed_code
+                std=failed_code
+                mmin=failed_code
+                mmax=failed_code
+
+            else:
 
                 # filter out the cannot read codes
                 classifications = self._remove_values_from_list(classifications,0)
 
-                n_valid=len(classifications)
+                # now finally we can apply the median
+                median=numpy.median(classifications)
 
-                if n_valid>=5:
+                mean=numpy.mean(classifications)
 
-                    # now finally we can apply the median
-                    median=numpy.median(classifications)
+                std=numpy.std(classifications)
 
-                    mean=numpy.mean(classifications)
+                mmin=numpy.min(classifications)
 
-                    std=numpy.std(classifications)
-
-                    mmin=numpy.min(classifications)
-
-                    mmax=numpy.max(classifications)
+                mmax=numpy.max(classifications)
 
         return(count,n_failed,n_cannot_read,n_valid,median,mean,std,mmin,mmax)
-        # return(count,median,mean,std,mmin,mmax)
 
     def create_measurements_table(self,index='PLATEIMAGE'):
 
