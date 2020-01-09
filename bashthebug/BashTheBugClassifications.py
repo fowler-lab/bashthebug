@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import os
+import os, math
 
 import pandas, numpy
 from tqdm import tqdm
@@ -62,7 +62,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
                 classifications = self._remove_values_from_list(classifications,1)
 
                 # now finally we can apply the median
-                median=numpy.median(classifications)
+                median=math.ceil(numpy.median(classifications))
 
                 mean=numpy.mean(classifications)
 
