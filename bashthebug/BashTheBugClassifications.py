@@ -34,7 +34,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
         n_failed=numpy.sum(classifications<-2)
 
         # now count how many 'cannot read' codes there are
-        n_cannot_read = numpy.sum((classifications!=-1) & (classifications!=-2))
+        n_cannot_read = numpy.sum((classifications==-1) & (classifications==-2))
 
         n_valid=numpy.sum(classifications>0)
 
