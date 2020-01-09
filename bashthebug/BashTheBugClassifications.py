@@ -65,8 +65,8 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
                     mmax=numpy.max(classifications)
 
-        # return(count,n_failed,n_cannot_read,n_valid,median,mean,std,mmin,mmax)
-        return(count,median,mean,std,mmin,mmax)
+        return(count,n_failed,n_cannot_read,n_valid,median,mean,std,mmin,mmax)
+        # return(count,median,mean,std,mmin,mmax)
 
     def create_measurements_table(self,index='PLATEIMAGE'):
 
@@ -79,16 +79,16 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
             self.measurements=pandas.DataFrame(foo['bashthebug_dilution'].tolist(),index=foo.index)
 
-
         else:
             # self.measurements=self.classifications[['plate','reading_day','drug','bashthebug_dilution']].groupby(['plate','reading_day','drug']).agg({'bashthebug_dilution':['median','mean','std','min','max','count']})
             foo=self.classifications[['plate','reading_day','drug','bashthebug_dilution']].groupby(['plate','reading_day','drug']).agg(self._custom_aggregate_classifications)
 
             self.measurements=pandas.DataFrame(foo['bashthebug_dilution'].tolist(),index=foo.index)
 
-        # self.measurements.columns=['count','n_failed','n_cannot_read','n_valid','median','mean','std','min','max']
-        self.measurements.columns=['count','median','mean','std','min','max']
-        self.measurements=self.measurements[['median','mean','std','min','max','count']]
+        self.measurements.columns=['count','n_failed','n_cannot_read','n_valid','median','mean','std','min','max']
+        # self.measurements.columns=['count','median','mean','std','min','max']
+        self.measurements=self.measurements[['median','mean','std','min','max','count','n_failed','n_cannot_read','n_valid']]
+        # self.measurements=self.measurements[['median','mean','std','min','max','count']]
 
         # self.classifications.drop(['metadata','annotations','subject_data','filename'], axis=1, inplace=True)
 
