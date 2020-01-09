@@ -36,7 +36,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
         # now count how many 'cannot read' codes there are
         n_cannot_read = numpy.sum((classifications!=-1) & (classifications!=-2))
 
-        n_valid=numpy.sum(classifications>01)
+        n_valid=numpy.sum(classifications>0)
 
         # first check we have enough samples
         if len(classifications)>10:
@@ -59,7 +59,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
             else:
 
                 # filter out the cannot read codes
-                classifications = self._remove_values_from_list(classifications,0)
+                classifications = self._remove_values_from_list(classifications,1)
 
                 # now finally we can apply the median
                 median=numpy.median(classifications)
