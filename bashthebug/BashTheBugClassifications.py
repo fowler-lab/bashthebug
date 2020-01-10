@@ -396,7 +396,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
                 elif row['plate_design']=="UKMYC6":
                     drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':7,'EMB':8,'INH':10,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':9,'RFB':6}
                 else:
-                    raise ValueError("plate design not found")
+                    raise ValueError("plate design not found "+row)
 
                 if answer_text is None:
                     return(-102)
