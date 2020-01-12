@@ -227,7 +227,10 @@ class BashTheBugClassifications(pyniverse.Classifications):
             plate_design=None
         elif "UKMYC" in filename:
             plate_image=filename.split("-UKMYC")[0]
-            plate_design=filename.split(plate_image+"-")[1].split("-zooniverse")[0]
+            if self.flavour=='regular':
+                plate_design=filename.split(plate_image+"-")[1].split("-zooniverse")[0]
+            elif self.flavour=='pro':
+                plate_design=filename.split(plate_image+"-")[1].split("-discrepancy")[0]
         else:
             if self.flavour=='regular':
                 plate_image=filename.split('-zooniverse-')[0]
@@ -271,7 +274,8 @@ class BashTheBugClassifications(pyniverse.Classifications):
         # self.classifications['plate']=self.classifications.progress_apply(self._extract_plate,axis=1)
 
         tqdm.pandas(desc='calculating dilution')
-        self.classifications['bashthebug_dilution']=self.classifications.progress_apply(self._parse_annotation,axis=1).astype(int)
+        self.classifications['bashthebug_dilution']=self.classifications.progress_apply(self._parse_annotation,axis=1) #.astype(int)
+        print(self.classifications['bashthebug_dilution'])
 
         # tqdm.pandas(desc='extracting study')
         # self.classifications["study_id"]=self.classifications.progress_apply(self.determine_study,axis=1)
@@ -379,6 +383,10 @@ class BashTheBugClassifications(pyniverse.Classifications):
                 question_type="regular_v2"
             elif "Mark the first well contain" in task_label:
                 question_type="testing"
+            elif "Please choose the dilution corresponding to the MIC" in task_label:
+                question_type="pro_v1"
+                for i in row.annotations:
+                    print(i)
             else:
                 raise ValueError("cannot determine type of task:"+ task_label)
 
@@ -396,6 +404,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
                 elif row['plate_design']=="UKMYC6":
                     drug_list={'BDQ':8,'KAN':5,'ETH':6,'AMI':7,'EMB':8,'INH':10,'LEV':7,'MXF':7,'DLM':7,'LZD':7,'CFZ':7,'RIF':9,'RFB':6}
                 else:
+                    print(row)
                     raise ValueError("plate design not found "+row)
 
                 if answer_text is None:
@@ -442,7 +451,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
                     elif ("No Growth in wells" in answer_text) or ("No Growth in all" in answer_text):
                         return 1
                     elif ("Growth in all" in answer_text):
-                        return int(self.drug_list[row.drug]+1)
+                        return int(drug_list[row.drug]+1)
                     elif "Cannot classify" in answer_text:
                         if row.annotations[1]["value"]=="Skip wells":
                             return -10
@@ -458,7 +467,10 @@ class BashTheBugClassifications(pyniverse.Classifications):
                             return -16
                         else:
                             raise ValueError("unrecognised answer for cannot classify: ",row.annotations[1]["value"])
-                    elif row.annotations[1]["value"].isnumeric():
-                        return int(row.annotations[1]["value"])
+                    elif len(row.annotations)>1 and row.annotations[1]["value"] is not None:
+                        try:
+                            return int(row.annotations[1]["value"])
+                        except:
+                            return(-106)
                     else:
-                        return(-106)
+                        return(-107)
