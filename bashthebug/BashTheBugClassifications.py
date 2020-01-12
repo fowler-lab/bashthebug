@@ -31,23 +31,32 @@ class BashTheBugClassifications(pyniverse.Classifications):
         # how many classifications do we have?
         count=len(classifications)
 
-        n_failed=numpy.sum(classifications<-2)
+        if self.flavour=="regular":
+            n_failed=numpy.sum(classifications<-2)
+            n_cannot_read = numpy.sum((classifications==-1) | (classifications==-2))
+            classifications_threshold=11
+            valid_threshold=6
 
-        # now count how many 'cannot read' codes there are
-        n_cannot_read = numpy.sum((classifications==-1) | (classifications==-2))
+        elif self.flavour=="pro":
+            n_failed=numpy.sum(classifications<-20)
+            n_cannot_read = numpy.sum((classifications<=-2) & (classifications>-20))
+            classifications_threshold=1
+            valid_threshold=1
 
         n_valid=numpy.sum(classifications>0)
 
+
+
         # first check we have enough samples
-        if len(classifications)>10:
+        if len(classifications)>=classifications_threshold:
 
             # now filter out failed classifications
-            classifications = self._remove_values_from_list(classifications,-2)
+            classifications = self._remove_values_from_list(classifications,-20)
 
             # if over half the volunteers have said they cannot read the image, return cannot read
             proportion_failed = n_cannot_read/len(classifications)
 
-            if proportion_failed>=0.5 or n_valid<=5:
+            if proportion_failed>=0.5 or n_valid<valid_threshold:
 
                 failed_code=-1
                 median=failed_code
@@ -74,9 +83,13 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
         return(count,n_failed,n_cannot_read,n_valid,median,mean,std,mmin,mmax)
 
-    def create_measurements_table(self,index='PLATEIMAGE'):
+    def create_measurements_table(self,index='PLATEIMAGE',flavour=None):
 
         assert index in ['PLATEIMAGE','PLATE'], 'specified index not recognised!'
+
+        assert flavour in ['regular','pro'], "must specify flavour of regular/pro!"
+
+        self.flavour=flavour
 
         # create a table of measurements, additional measurements (e.g. Vizion or AMyGDA) can be merged in later
         if index=='PLATEIMAGE':
