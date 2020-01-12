@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import os, math
+import os, math, copy
 
 import pandas, numpy
 from tqdm import tqdm
@@ -275,7 +275,15 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
         tqdm.pandas(desc='calculating dilution')
         self.classifications['bashthebug_dilution']=self.classifications.progress_apply(self._parse_annotation,axis=1) #.astype(int)
-        print(self.classifications['bashthebug_dilution'])
+
+        if self.flavour=='pro':
+
+            incomplete_classifications=self.classifications.loc[self.classifications['bashthebug_dilution']==-999]
+
+            print("Filtering out "+str(len(incomplete_classifications))+ " incomplete classifications")
+
+            df=copy.deepcopy(self.classifications.loc[self.classifications['bashthebug_dilution']!=-999])
+            self.classifications=df
 
         # tqdm.pandas(desc='extracting study')
         # self.classifications["study_id"]=self.classifications.progress_apply(self.determine_study,axis=1)
@@ -373,7 +381,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
             # First thing is to work out what the question/task structure is
             task_label=row.annotations[0]["task_label"]
 
-            if "being mindful" in task_label:
+            if "being mindful of the existing classification results" in task_label:
                 question_type="pro_v1"
             elif "Having looked" in task_label:
                 question_type="regular_v1"
@@ -383,10 +391,10 @@ class BashTheBugClassifications(pyniverse.Classifications):
                 question_type="regular_v2"
             elif "Mark the first well contain" in task_label:
                 question_type="testing"
+            # all of these rows are from BASHTHEBUGPRO but are wrong since it only asked one of the two second questions
+            # they have been retrospectively removed from BASHTHEBUGPRO and then are filtered out
             elif "Please choose the dilution corresponding to the MIC" in task_label:
-                question_type="pro_v1"
-                for i in row.annotations:
-                    print(i)
+                return(-999)
             else:
                 raise ValueError("cannot determine type of task:"+ task_label)
 
@@ -446,7 +454,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
                 elif question_type=="pro_v1":
 
-                    if ("No Growth in either" in answer_text) or ("No Growth in one" in answer_text):
+                    if ("No Growth in either" in answer_text) or ("No growth in one" in answer_text):
                         return -2
                     elif ("No Growth in wells" in answer_text) or ("No Growth in all" in answer_text):
                         return 1
@@ -465,12 +473,14 @@ class BashTheBugClassifications(pyniverse.Classifications):
                             return -15
                         elif row.annotations[1]["value"]=="Other":
                             return -16
+                        elif row.annotations[1]["value"] is None:
+                            return(-106)
                         else:
-                            raise ValueError("unrecognised answer for cannot classify: ",row.annotations[1]["value"])
+                            raise ValueError("unrecognised answer for cannot classify: ",row.annotations[1])
                     elif len(row.annotations)>1 and row.annotations[1]["value"] is not None:
                         try:
                             return int(row.annotations[1]["value"])
                         except:
-                            return(-106)
+                            return(-107)
                     else:
-                        return(-107)
+                        return(-108)
