@@ -58,7 +58,7 @@ if __name__ == "__main__":
     elif options.flavour=="pro":
         logging.basicConfig(filename="log/bashthebugpro-classifications-analyse-"+most_recent_date+".log",level=logging.INFO,format='%(levelname)s: %(message)s', datefmt='%a %d %b %Y %H:%M:%S')
 
-    current_classifications.create_measurements_table()
+    current_classifications.create_measurements_table(flavour=options.flavour)
 
     current_classifications.create_users_table()
 
