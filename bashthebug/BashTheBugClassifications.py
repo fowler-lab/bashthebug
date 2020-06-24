@@ -264,6 +264,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
                     reading_day=int(plate_image.split("-")[-1])
                 except:
                     print(plate_image,row)
+                    reading_day=None
         else:
             site=None
             reading_day=None
