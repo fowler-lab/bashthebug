@@ -460,7 +460,11 @@ class BashTheBugClassifications(pyniverse.Classifications):
                     elif ("No Growth in wells" in answer_text) or ("No Growth in all" in answer_text):
                         return 1
                     elif ("Growth in all" in answer_text):
-                        return int(drug_list[row.drug]+1)
+                        try:
+                            a=int(drug_list[row.drug]+1)
+                        except:
+                            a=-1                            
+                        return(a)
 
                     elif "Cannot classify" in answer_text:
                         return -1
