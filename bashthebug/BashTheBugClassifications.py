@@ -260,7 +260,10 @@ class BashTheBugClassifications(pyniverse.Classifications):
             if 'UKMYC' in plate_image:
                 reading_day=int(plate_image.split("-")[-2])
             else:
-                reading_day=int(plate_image.split("-")[-1])
+                try:
+                    reading_day=int(plate_image.split("-")[-1])
+                except:
+                    print(plate_image,row)
         else:
             site=None
             reading_day=None
