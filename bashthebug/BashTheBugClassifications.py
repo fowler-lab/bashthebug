@@ -45,8 +45,6 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
         n_valid=numpy.sum(classifications>0)
 
-
-
         # first check we have enough samples
         if len(classifications)>=classifications_threshold:
 
@@ -83,13 +81,13 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
         return(count,n_failed,n_cannot_read,n_valid,median,mean,std,mmin,mmax)
 
-    def create_measurements_table(self,index='PLATEIMAGE',flavour=None):
+    def create_measurements_table(self,index='PLATEIMAGE'):
 
         assert index in ['PLATEIMAGE','PLATE'], 'specified index not recognised!'
 
-        assert flavour in ['regular','pro'], "must specify flavour of regular/pro!"
+        # assert flavour in ['regular','pro'], "must specify flavour of regular/pro!"
 
-        self.flavour=flavour
+        # self.flavour=flavour
 
         # create a table of measurements, additional measurements (e.g. Vizion or AMyGDA) can be merged in later
         if index=='PLATEIMAGE':
@@ -102,7 +100,8 @@ class BashTheBugClassifications(pyniverse.Classifications):
             # self.measurements=self.classifications[['plate','reading_day','drug','bashthebug_dilution']].groupby(['plate','reading_day','drug']).agg({'bashthebug_dilution':['median','mean','std','min','max','count']})
             foo=self.classifications[['plate','reading_day','drug','bashthebug_dilution']].groupby(['plate','reading_day','drug']).agg(self._custom_aggregate_classifications)
 
-            self.measurements=pandas.DataFrame(foo['bashthebug_dilution'].tolist(),index=foo.index)
+            # self.measurements=pandas.DataFrame(foo['bashthebug_dilution'].tolist(),index=foo.index)
+            self.measurements=foo[['bashthebug_dilution']]
 
         self.measurements.columns=['count','n_failed','n_cannot_read','n_valid','median','mean','std','min','max']
         # self.measurements.columns=['count','median','mean','std','min','max']
@@ -219,16 +218,6 @@ class BashTheBugClassifications(pyniverse.Classifications):
         else:
             study_id="CRyPTIC2"
 
-        # extract plate
-        plate=None
-        if 'plate_image' in row.keys() and row['plate_image'] is not None:
-            if "UKMYC" in row['plate_image']:
-                foo=row['plate_image'][:-7]
-            else:
-                foo=row['plate_image']
-            location=foo.rfind("-")
-            plate=foo[:location]
-
         # extract drug
         drug=None
         if filename is not None:
@@ -250,6 +239,16 @@ class BashTheBugClassifications(pyniverse.Classifications):
             elif self.flavour=='pro':
                 plate_image=filename.split('-discrepancy-')[0]
             plate_design="UKMYC5"
+
+        # extract plate
+        plate=None
+        if plate_image is not None:
+            if "UKMYC" in plate_image:
+                foo=plate_image[:-7]
+            else:
+                foo=plate_image
+            location=foo.rfind("-")
+            plate=foo[:location]
 
         # extract site and reading_day
         if study_id=='CRyPTIC1':
@@ -463,7 +462,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
                         try:
                             a=int(drug_list[row.drug]+1)
                         except:
-                            a=-1                            
+                            a=-1
                         return(a)
 
                     elif "Cannot classify" in answer_text:
