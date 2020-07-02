@@ -100,18 +100,13 @@ class BashTheBugClassifications(pyniverse.Classifications):
             # self.measurements=self.classifications[['plate','reading_day','drug','bashthebug_dilution']].groupby(['plate','reading_day','drug']).agg({'bashthebug_dilution':['median','mean','std','min','max','count']})
             foo=self.classifications[['plate','reading_day','drug','bashthebug_dilution']].groupby(['plate','reading_day','drug']).agg(self._custom_aggregate_classifications)
 
-            # self.measurements=pandas.DataFrame(foo['bashthebug_dilution'].tolist(),index=foo.index)
-            self.measurements=foo[['bashthebug_dilution']]
+            self.measurements=pandas.DataFrame(foo['bashthebug_dilution'].tolist(),index=foo.index)
 
         self.measurements.columns=['count','n_failed','n_cannot_read','n_valid','median','mean','std','min','max']
-        # self.measurements.columns=['count','median','mean','std','min','max']
+
         self.measurements=self.measurements[['median','mean','std','min','max','count','n_failed','n_cannot_read','n_valid']]
-        # self.measurements=self.measurements[['median','mean','std','min','max','count']]
 
         # self.classifications.drop(['metadata','annotations','subject_data','filename'], axis=1, inplace=True)
-
-        # rename the top level of the columns
-        # self.measurements.columns.set_levels(['bashthebug_dilution'],level=0,inplace=True)
 
     def create_durations_table(self,index='PLATEIMAGE'):
 
