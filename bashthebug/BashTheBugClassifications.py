@@ -9,6 +9,11 @@ import pyniverse
 
 class BashTheBugClassifications(pyniverse.Classifications):
 
+    def __init__(self,flavour=None):
+        super().__init__()
+        assert flavour in ['regular','pro'], 'flavour not recognised! '+flavour
+        self.flavour=flavour
+
     def _remove_values_from_list(self,the_list,threshold):
         return numpy.array([value for value in the_list if value >= threshold]).astype(int)
 
@@ -84,10 +89,6 @@ class BashTheBugClassifications(pyniverse.Classifications):
     def create_measurements_table(self,index='PLATEIMAGE'):
 
         assert index in ['PLATEIMAGE','PLATE'], 'specified index not recognised!'
-
-        # assert flavour in ['regular','pro'], "must specify flavour of regular/pro!"
-
-        # self.flavour=flavour
 
         # create a table of measurements, additional measurements (e.g. Vizion or AMyGDA) can be merged in later
         if index=='PLATEIMAGE':
@@ -265,12 +266,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
         return(pandas.Series([filename,plate_image,plate_design,drug,plate,study_id,reading_day,site]))
 
-    def extract_classifications(self,flavour='regular'):
-
-        assert flavour in ['regular','pro'], "unrecognised flavour! "
-
-        # save the flavour
-        self.flavour=flavour
+    def extract_classifications(self):
 
         # tqdm.pandas(desc='extracting filename')
         # self.classifications['filename']=self.classifications.progress_apply(self._extract_filename2,axis=1)

@@ -29,26 +29,26 @@ if __name__ == "__main__":
     if options.to_date:
         if options.from_date:
             if options.flavour=='pro':
-                current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date,from_date=options.from_date,live_rows=False)
+                current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date,from_date=options.from_date,live_rows=False,flavour=options.flavour)
             else:
-                current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date,from_date=options.from_date)
+                current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date,from_date=options.from_date,flavour=options.flavour)
         else:
             if options.flavour=='pro':
-                current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date,live_rows=False)
+                current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date,live_rows=False,flavour=options.flavour)
             else:
-                current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date)
+                current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,to_date=options.to_date,flavour=options.flavour)
     elif options.from_date:
         if options.flavour=='pro':
-            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,from_date=options.from_date,live_rows=False)
+            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,from_date=options.from_date,live_rows=False,flavour=options.flavour)
         else:
-            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,from_date=options.from_date)
+            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,from_date=options.from_date,flavour=options.flavour)
     else:
         if options.flavour=='pro':
-            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,live_rows=False)
+            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,live_rows=False,flavour=options.flavour)
         else:
-            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input)
+            current_classifications=bashthebug.BashTheBugClassifications(zooniverse_file=options.input,flavour=options.flavour)
 
-    current_classifications.extract_classifications(flavour=options.flavour)
+    current_classifications.extract_classifications()
 
     most_recent_date=str(current_classifications.classifications.created_at.max().date().isoformat())
 
