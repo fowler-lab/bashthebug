@@ -9,14 +9,14 @@ import pyniverse
 
 class BashTheBugClassifications(pyniverse.Classifications):
 
-    def __init__(self,flavour=None):
-        super().__init__()
+    def __init__(self,flavour=None,*args,**kwargs):
         assert flavour in ['regular','pro'], 'flavour not recognised! '+flavour
         self.flavour=flavour
+        super().__init__(*args, **kwargs)
+
 
     def _remove_values_from_list(self,the_list,threshold):
         return numpy.array([value for value in the_list if value >= threshold]).astype(int)
-
 
     def _custom_aggregate_classifications(self,series):
 
@@ -258,7 +258,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
                 try:
                     reading_day=int(plate_image.split("-")[-1])
                 except:
-                    print(plate_image,row)
+                    print("Cannot assign reading_day ",plate_image,row)
                     reading_day=None
         else:
             site=None
