@@ -402,7 +402,9 @@ class BashTheBugClassifications(pyniverse.Classifications):
             elif "Please choose the dilution corresponding to the MIC" in task_label:
                 return(-999)
             else:
-                raise ValueError("cannot determine type of task:"+ task_label)
+                print("cannot determine type of task:"+ task_label)
+                return(-100)
+
 
             # ignore the classifications where a red cross is placed
             if question_type=="testing":
