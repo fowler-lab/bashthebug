@@ -45,8 +45,8 @@ class BashTheBugClassifications(pyniverse.Classifications):
         elif self.flavour=="pro":
             n_failed=numpy.sum(classifications<-20)
             n_cannot_read = numpy.sum((classifications<=-2) & (classifications>-20))
-            classifications_threshold=1
-            valid_threshold=1
+            classifications_threshold=2
+            valid_threshold=2
 
         n_valid=numpy.sum(classifications>0)
 
@@ -56,33 +56,50 @@ class BashTheBugClassifications(pyniverse.Classifications):
             # now filter out failed classifications
             classifications = self._remove_values_from_list(classifications,-20)
 
-            # if over half the volunteers have said they cannot read the image, return cannot read
+            # if half or over the volunteers have said they cannot read the image, return cannot read
             proportion_failed = n_cannot_read/len(classifications)
 
             if proportion_failed>=0.5 or n_valid<valid_threshold:
 
-                failed_code=-1
-                median=failed_code
-                mean=failed_code
-                std=failed_code
-                mmin=failed_code
-                mmax=failed_code
+                median=-1
 
             else:
 
                 # filter out the cannot read codes
                 classifications = self._remove_values_from_list(classifications,1)
 
-                # now finally we can apply the median
-                median=math.ceil(numpy.median(classifications))
+                if self.flavour=='regular':
 
-                mean=numpy.mean(classifications)
+                    # now finally we can apply the median
+                    median=math.ceil(numpy.median(classifications))
 
-                std=numpy.std(classifications)
+                    mean=numpy.mean(classifications)
 
-                mmin=numpy.min(classifications)
+                    std=numpy.std(classifications)
 
-                mmax=numpy.max(classifications)
+                    mmin=numpy.min(classifications)
+
+                    mmax=numpy.max(classifications)
+
+                elif self.flavour=='pro':
+
+
+                    # count the number of votes per bin e.g. [2,3,3,5] -> [0, 0, 1, 2, 0, 1]
+                    dilution_votes=numpy.bincount(classifications)
+
+                    # find out the largest number of votes (could be tied across several bins)
+                    max_votes=dilution_votes.max()
+
+                    # if there is only one and it has at least two votes
+                    if numpy.sum(dilution_votes==max_votes)==1 and max_votes>1:
+
+                        dilution_bins=numpy.arange(classifications.max()+1)
+
+                        median=dilution_bins[dilution_votes==max_votes][0]
+
+                    else:
+                        
+                        median=-1
 
         return(count,n_failed,n_cannot_read,n_valid,median,mean,std,mmin,mmax)
 
