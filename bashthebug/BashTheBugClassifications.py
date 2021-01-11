@@ -83,7 +83,6 @@ class BashTheBugClassifications(pyniverse.Classifications):
 
                 elif self.flavour=='pro':
 
-
                     # count the number of votes per bin e.g. [2,3,3,5] -> [0, 0, 1, 2, 0, 1]
                     dilution_votes=numpy.bincount(classifications)
 
@@ -98,7 +97,7 @@ class BashTheBugClassifications(pyniverse.Classifications):
                         median=dilution_bins[dilution_votes==max_votes][0]
 
                     else:
-                        
+
                         median=-1
 
         return(count,n_failed,n_cannot_read,n_valid,median,mean,std,mmin,mmax)
