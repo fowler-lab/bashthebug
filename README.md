@@ -1,1 +1,1 @@
-# bashthebug: a Python class to analyse the results of the Zooniverse volunteers
+# bashthebug: a Python package to analyse the results of the Zooniverse volunteers for the BashTheBug citizen science project
